@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="jquery/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="jquery/themes/icon.css">
+    <script type="text/javascript" src="jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="jquery/jquery.easyui.min.js"></script>
+    <title>Crud JQUERY</title>
+
+</head>
+
+<body>
+    <h2>Basic CRUD Application</h2>
+    <p>Click the buttons on datagrid toolbar to do crud actions.</p>
+
+    <table id="dg" title="My Users" class="easyui-datagrid" style="width:700px;height:250px" url="api.php"
+        method="GET" toolbar="#toolbar" pagination="true" rownumbers="true" fitColumns="true" singleSelect="true">
+        <thead>
+            <tr>
+                <th field="cedula" width="50">cedula</th>
+                <th field="nombre" width="50">nombre</th>
+                <th field="apellido" width="50">apellido</th>
+                <th field="direccion" width="50">direccion</th>
+                <th field="telefono" width="50">telefono</th>
+            </tr>
+        </thead>
+    </table>
+
+
+    <div id="toolbar">
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newUser()">Nuevo
+            Estudiante</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true"
+            onclick="editUser()">Editar Estudiante</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true"
+            onclick="destroyUser()">Eliminar Estudiante</a>
+    </div>
+
+    <div id="dlg" class="easyui-dialog" style="width:400px"
+        data-options="closed:true,modal:true,border:'thin',buttons:'#dlg-buttons'">
+        <form id="fm" method="post" novalidate style="margin:0;padding:20px 50px">
+            <h3>Informacion Estudiante</h3>
+            <div style="margin-bottom:10px">
+                <input name="cedula" class="easyui-textbox" required="true" label="Cedula:" style="width:100%">
+            </div>
+            <div style="margin-bottom:10px">
+                <input name="nombre" class="easyui-textbox" required="true" label="Nombre:" style="width:100%">
+            </div>
+            <div style="margin-bottom:10px">
+                <input name="apellido" class="easyui-textbox" required="true" label="Apellido:" style="width:100%">
+            </div>
+            <div style="margin-bottom:10px">
+                <input name="direccion" class="easyui-textbox" required="true" label="Direccion:" style="width:100%">
+            </div>
+            <div style="margin-bottom:10px">
+                <input name="telefono" class="easyui-textbox" required="true" validType="number" label="Telefono:"
+                    style="width:100%">
+            </div>
+        </form>
+    </div>
+    <div id="dlg-buttons">
+        <a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-save" onclick="saveUser()"
+            style="width:90px">Guardar</a>
+        <a href="javascript:void(0)" id="botonAct" class="easyui-linkbutton c6" iconCls="icon-ok" onclick="actualizar()"
+            style="width:90px">Actualizar</a>
+
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel"
+            onclick="javascript:$('#dlg').dialog('close')" style="width:90px">Cancelar</a>
+    </div>
+    <script type="text/javascript">
+        var url;
+        function newUser() {
+            $('#dlg').dialog('open').dialog('center').dialog('setTitle', 'New User');
+            $('#fm').form('clear');
+            url = 'api.php';
+        }
+        var urlAct;
+
+        function editUser() {
+    var row = $('#dg').datagrid('getSelected');
+    if (row) {
+        $('#botonAct').show();
+        $('#botonGuardar').hide();
+        $('#dlg').dialog('open').dialog('center').dialog('setTitle', 'Edit User');
+        $('#fm').form('load', row);
+        urlAct = 'api.php?cedula=' + row.cedula; // Asegúrate de ajustar según tu estructura de API
+    } else {
+        $.messager.alert('Error', 'Por favor, selecciona un estudiante para editar.');
+    }
+}
+
+function actualizar() {
+    var formData = $('#fm').serializeArray();
+    var data = formData.reduce(function (obj, item) {
+        obj[item.name] = item.value;
+        return obj;
+    }, {});
+
+    $.ajax({
+        url: urlAct,
+        type: 'PUT',
+        data: data,
+        success: function (result) {
+            if (result && result.errorMsg) {
+                $.messager.show({
+                    title: 'Error',
+                    msg: result.errorMsg
+                });
+            } else {
+                $('#dlg').dialog('close');        // cierra el diálogo
+                $('#dg').datagrid('reload');    // recarga los datos del usuario
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error('Error en la solicitud AJAX:', error);
+            $.messager.show({
+                title: 'Error',
+                msg: 'Error al realizar la solicitud de actualización'
+            });
+        },
+        dataType: 'json'
+    });
+}
+
+
+        function saveUser() {
+            $('#fm').form('submit', {
+                url: url,
+                type: "POST",
+                iframe: false,
+                onSubmit: function () {
+                    return $(this).form('validate');
+                },
+                success: function (result) {
+                    var result = eval('(' + result + ')');
+                    if (result.errorMsg) {
+                        $.messager.show({
+                            title: 'Error',
+                            msg: result.errorMsg
+                        });
+                    } else {
+                        $('#dlg').dialog('close');        // close the dialog
+                        $('#dg').datagrid('reload');    // reload the user data
+                    }
+                }
+            });
+        }
+  /*       function destroyUser() {
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                $.messager.confirm('Confirm', 'Are you sure you want to destroy this user?', function (r) {
+                    if (r) {
+                        $.post('destroy_user.php', { id: row.id }, function (result) {
+                            if (result.success) {
+                                $('#dg').datagrid('reload');    // reload the user data
+                            } else {
+                                $.messager.show({    // show error message
+                                    title: 'Error',
+                                    msg: result.errorMsg
+                                });
+                            }
+                        }, 'json');
+                    }
+                });
+            }
+        }
+ */
+
+
+        function destroyUser() {
+
+            var row = $('#dg').datagrid('getSelected');
+            if (row) {
+                $.messager.confirm('Confirm', 'Estas seguro de eliminar a este estudiante?', function (r) {
+                    if (r) {
+                        console.log(row.cedula);
+                        $.ajax({
+                            url: 'api.php?cedula='+row.cedula,
+                            type: 'DELETE',
+                            data: {
+                                cedula: row.cedula
+                            },
+                            success: function (result) {
+                                if (result == "Eliminado") {
+                                    
+                                    $('#dg').datagrid('reload'); // reload the user data   // reload the user data
+                                } else {
+                                    $.messager.show({ // show error message
+                                        title: 'Error',
+                                        msg: result.errorMsg
+                                    });
+                                }
+                                // location.reload();
+                            },
+                            dataType: 'json'
+                        });
+                    }
+                });
+            }
+        };
+
+    </script>
+</body>
+
+</html>
